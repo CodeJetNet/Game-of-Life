@@ -7,38 +7,40 @@ export default class GameOfLife {
     constructor() {
         this.#app = new PIXI.Application(
             {
-                width: 256,         // default: 800
-                height: 256,        // default: 600
                 antialias: true,    // default: false
                 transparent: false, // default: false
                 resolution: 1       // default: 1
             }
         );
 
+        this.#app.renderer.view.style.position = "absolute";
+        this.#app.renderer.view.style.display = "block";
+        this.#app.renderer.autoResize = true;
+        this.#app.renderer.resize(window.innerWidth, window.innerHeight);
+
         document.body.appendChild(this.#app.view);
 
-        PIXI.loader
-            .add("images/tileset.png")
-            .load(() => {
-                this.setup();
-            });
+        this.createGrid();
     }
 
-    setup() {
-        let texture = PIXI.utils.TextureCache['images/tileset.png'];
+    createGrid() {
+        let magnification = 20;
 
-        //Tell the texture to use that rectangular section
-        texture.frame = new PIXI.Rectangle(192, 128, 64, 64);
+        for (var i = 0; i * magnification < window.innerWidth; i++) {
+            let gap = i * magnification;
 
-        //Create the sprite from the texture
-        let rocket = new PIXI.Sprite(texture);
+            let horizontalLine = new PIXI.Graphics();
+            horizontalLine.lineStyle(1, 0xFFFFFF, 1);
+            horizontalLine.moveTo(0, gap);
+            horizontalLine.lineTo(window.innerWidth, gap);
+            this.#app.stage.addChild(horizontalLine);
 
-        //Position the rocket sprite on the canvas
-        rocket.x = 32;
-        rocket.y = 32;
-
-        //Add the rocket to the stage
-        this.#app.stage.addChild(rocket);
+            let verticalLine = new PIXI.Graphics();
+            verticalLine.lineStyle(1, 0xFFFFFF, 1);
+            verticalLine.moveTo(gap, 0);
+            verticalLine.lineTo(gap, window.innerHeight);
+            this.#app.stage.addChild(verticalLine);
+        }
 
         //Render the stage
         this.#app.renderer.render(this.#app.stage);
