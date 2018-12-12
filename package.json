@@ -1,0 +1,29 @@
+{
+  "name": "@codejet/gameoflife",
+  "version": "0.0.0",
+  "description": "Game of Life",
+  "scripts": {
+    "start": "http-server -p 4200",
+    "webpack": "webpack"
+  },
+  "author": "Josh Houghtelin <josh@findsomehelp.com>, Zech Walden <zech@findsomehelp.come>",
+  "main": "src/index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.1.5",
+    "@babel/core": "^7.1.5",
+    "@babel/plugin-proposal-class-properties": "^7.1.0",
+    "@babel/preset-env": "^7.1.5",
+    "babel-loader": "^8.0.4",
+    "http-server": "^0.11.1",
+    "webpack": "^4.25.1",
+    "webpack-cli": "^3.1.2"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.0.0",
+    "envy": "^1.1.0",
+    "matter-js": "^0.14.2",
+    "pixi-tween": "^0.2.0",
+    "pixi.js": "^4.8.2"
+  }
+}
