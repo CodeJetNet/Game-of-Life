@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js'
 export default class GameOfLife {
 
     #app;
+    #buttons = [];
 
     constructor() {
         this.#app = new PIXI.Application(
@@ -20,29 +21,58 @@ export default class GameOfLife {
 
         document.body.appendChild(this.#app.view);
 
+        PIXI.loader
+            .add("images/tileset.png")
+            .load(() => this.setup());
+    }
+
+    setup() {
         this.createGrid();
     }
 
+    getAliveTexture() {
+        let aliveSprite = PIXI.utils.TextureCache["images/tileset.png"];
+        aliveSprite.frame = new PIXI.Rectangle(64, 0, 64, 64);
+
+        return aliveSprite;
+    }
+
+    getDeadTexture() {
+        let texture = PIXI.utils.TextureCache["images/tileset.png"];
+        texture.frame = new PIXI.Rectangle(0, 0, 64, 64);
+
+        return texture;
+    }
+
     createGrid() {
-        let magnification = 20;
+        for (let i = 0; i * 64 < window.innerWidth; i++) {
+            this.#buttons[i] = new PIXI.Sprite(this.getDeadTexture());
+            this.#buttons[i].buttonMode = true;
 
-        for (var i = 0; i * magnification < window.innerWidth; i++) {
-            let gap = i * magnification;
+            // button.anchor.set(0.5);
+            this.#buttons[i].x = i * 64;
+            this.#buttons[i].y = 0;
 
-            let horizontalLine = new PIXI.Graphics();
-            horizontalLine.lineStyle(1, 0xFFFFFF, 1);
-            horizontalLine.moveTo(0, gap);
-            horizontalLine.lineTo(window.innerWidth, gap);
-            this.#app.stage.addChild(horizontalLine);
+            // make the button interactive...
+            this.#buttons[i].interactive = true;
+            this.#buttons[i].buttonMode = true;
 
-            let verticalLine = new PIXI.Graphics();
-            verticalLine.lineStyle(1, 0xFFFFFF, 1);
-            verticalLine.moveTo(gap, 0);
-            verticalLine.lineTo(gap, window.innerHeight);
-            this.#app.stage.addChild(verticalLine);
+            this.#buttons[i]
+                .on('pointerdown', this.makeAlive(i))
+                .on('pointerup', this.makeDead(i))
+                .on('pointerover', () => this.makeAlive(i))
+                .on('pointerout', () => this.makeDead(i));
+
+            this.#app.stage.addChild(this.#buttons[i]);
         }
+    }
 
-        //Render the stage
-        this.#app.renderer.render(this.#app.stage);
+    makeDead(button_coordinate) {
+        console.log(button_coordinate);
+        this.#buttons[button_coordinate].texture = this.getDeadTexture();
+    }
+
+    makeAlive(button_coordinate) {
+        this.#buttons[button_coordinate].texture = this.getAliveTexture();
     }
 }
