@@ -4,6 +4,8 @@ export default class GameOfLife {
 
     #app;
     #buttons = [];
+    #aliveTexture;
+    #deadTexture;
 
     constructor() {
         this.#app = new PIXI.Application(
@@ -22,57 +24,54 @@ export default class GameOfLife {
         document.body.appendChild(this.#app.view);
 
         PIXI.loader
-            .add("images/tileset.png")
+            .add("images/alive.png")
+            .add("images/dead.png")
             .load(() => this.setup());
     }
 
     setup() {
+        this.#deadTexture = PIXI.utils.TextureCache["images/dead.png"];
+        this.#aliveTexture = PIXI.utils.TextureCache["images/alive.png"];
+
         this.createGrid();
     }
 
-    getAliveTexture() {
-        let aliveSprite = PIXI.utils.TextureCache["images/tileset.png"];
-        aliveSprite.frame = new PIXI.Rectangle(64, 0, 64, 64);
-
-        return aliveSprite;
-    }
-
-    getDeadTexture() {
-        let texture = PIXI.utils.TextureCache["images/tileset.png"];
-        texture.frame = new PIXI.Rectangle(0, 0, 64, 64);
-
-        return texture;
-    }
-
     createGrid() {
-        for (let i = 0; i * 64 < window.innerWidth; i++) {
-            this.#buttons[i] = new PIXI.Sprite(this.getDeadTexture());
-            this.#buttons[i].buttonMode = true;
+        let grid_size = 64;
 
-            // button.anchor.set(0.5);
-            this.#buttons[i].x = i * 64;
-            this.#buttons[i].y = 0;
+        let columns = (window.innerWidth / grid_size) - 1;
+        let rows = (window.innerHeight / grid_size) - 1;
 
-            // make the button interactive...
-            this.#buttons[i].interactive = true;
-            this.#buttons[i].buttonMode = true;
+        for (let row = 0; row < rows; row++) {
+            for (let column = 0; column < columns; column++) {
 
-            this.#buttons[i]
-                .on('pointerdown', this.makeAlive(i))
-                .on('pointerup', this.makeDead(i))
-                .on('pointerover', () => this.makeAlive(i))
-                .on('pointerout', () => this.makeDead(i));
+                let location = row * columns + column + row;
 
-            this.#app.stage.addChild(this.#buttons[i]);
+                this.#buttons[location] = new PIXI.Sprite(this.#deadTexture);
+
+                this.#buttons[location].x = column * grid_size;
+                this.#buttons[location].y = row * grid_size;
+
+                this.#buttons[location].buttonMode = true;
+                this.#buttons[location].interactive = true;
+                this.#buttons[location].buttonMode = true;
+
+                this.#buttons[location]
+                //     .on('pointerdown', this.makeAlive(i))
+                //     .on('pointerup', this.makeDead(i))
+                    .on('pointerover', () => this.makeAlive(location))
+                    .on('pointerout', () => this.makeDead(location));
+
+                this.#app.stage.addChild(this.#buttons[location]);
+            }
         }
     }
 
-    makeDead(button_coordinate) {
-        console.log(button_coordinate);
-        this.#buttons[button_coordinate].texture = this.getDeadTexture();
+    makeDead(i) {
+        this.#buttons[i].texture = this.#deadTexture;
     }
 
-    makeAlive(button_coordinate) {
-        this.#buttons[button_coordinate].texture = this.getAliveTexture();
+    makeAlive(i) {
+        this.#buttons[i].texture = this.#aliveTexture;
     }
 }
