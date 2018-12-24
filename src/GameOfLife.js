@@ -1,11 +1,14 @@
-import * as PIXI from 'pixi.js'
+import * as PIXI from 'pixi.js';
+import * as jQuery from 'jquery';
 
 export default class GameOfLife {
 
     #app;
-    #buttons = [];
     #aliveTexture;
     #deadTexture;
+    #cellSize = 32;
+    #generations = [];
+    #currentGeneration = 0;
 
     constructor() {
         this.#app = new PIXI.Application(
@@ -19,7 +22,11 @@ export default class GameOfLife {
         this.#app.renderer.view.style.position = "absolute";
         this.#app.renderer.view.style.display = "block";
         this.#app.renderer.autoResize = true;
-        this.#app.renderer.resize(window.innerWidth, window.innerHeight);
+        this.#app.renderer.resize(window.innerWidth, window.innerHeight - 100);
+
+        this.#generations[this.#currentGeneration] = new PIXI.Container();
+
+        this.#app.stage.addChild(this.#generations[this.#currentGeneration]);
 
         document.body.appendChild(this.#app.view);
 
@@ -33,45 +40,163 @@ export default class GameOfLife {
         this.#deadTexture = PIXI.utils.TextureCache["images/dead.png"];
         this.#aliveTexture = PIXI.utils.TextureCache["images/alive.png"];
 
-        this.createGrid();
+        this.createGrid(this.#generations[0]);
+        this.setup_jquery();
     }
 
-    createGrid() {
-        let grid_size = 64;
+    setup_jquery() {
+        jQuery('#next-generation').on('click', () => this.nextGeneration())
+    }
 
-        let columns = (window.innerWidth / grid_size) - 1;
-        let rows = (window.innerHeight / grid_size) - 1;
+    nextGeneration() {
+        let nextGeneration = this.#currentGeneration + 1;
 
-        for (let row = 0; row < rows; row++) {
-            for (let column = 0; column < columns; column++) {
+        this.#generations[nextGeneration] = new PIXI.Container();
+        this.#app.stage.addChild(this.#generations[nextGeneration]);
+        this.populateNextGeneration();
+        this.#generations[this.#currentGeneration].visible = false;
+        this.#generations[nextGeneration].visible = true;
+        this.#currentGeneration = nextGeneration;
+    }
 
-                let location = row * columns + column + row;
+    populateNextGeneration() {
+        let nextGeneration = this.#generations[this.#currentGeneration + 1];
+        this.createGrid(nextGeneration);
 
-                this.#buttons[location] = new PIXI.Sprite(this.#deadTexture);
+        let currentGenerationCells = this.#generations[this.#currentGeneration].cells;
+        let nextGenerationCells = nextGeneration.cells;
 
-                this.#buttons[location].x = column * grid_size;
-                this.#buttons[location].y = row * grid_size;
-
-                this.#buttons[location].buttonMode = true;
-                this.#buttons[location].interactive = true;
-                this.#buttons[location].buttonMode = true;
-
-                this.#buttons[location]
-                //     .on('pointerdown', this.makeAlive(i))
-                //     .on('pointerup', this.makeDead(i))
-                    .on('pointerover', () => this.makeAlive(location))
-                    .on('pointerout', () => this.makeDead(location));
-
-                this.#app.stage.addChild(this.#buttons[location]);
+        for (let cell of currentGenerationCells) {
+            if (cell !== undefined) {
+                if (this.cellLivesToNextGen(cell)) {
+                    this.makeAlive(nextGenerationCells[cell.location]);
+                }
             }
         }
     }
 
-    makeDead(i) {
-        this.#buttons[i].texture = this.#deadTexture;
+    cellLivesToNextGen(cell) {
+        if (this.cellHasLessThanTwoNeighbors(cell)) {
+            return false;
+        }
+
+        return true;
     }
 
-    makeAlive(i) {
-        this.#buttons[i].texture = this.#aliveTexture;
+    cellHasLessThanTwoNeighbors(cell) {
+        let currentGenerationCells = this.#generations[this.#currentGeneration].cells;
+        let neighbors = 0;
+
+        if (this.isCellAlive(currentGenerationCells[cell.location + 1]) === true) {
+            neighbors += 1;
+        }
+
+        if (this.isCellAlive(currentGenerationCells[cell.location + 1]) === true) {
+            neighbors += 1;
+        }
+
+        if (this.isCellAlive(currentGenerationCells[cell.location - 1]) === true) {
+            neighbors += 1;
+        }
+
+        if (neighbors < 2) {
+            return true;
+        }
+
+        return false;
+    }
+
+    getNeighborLocations(location) {
+        return [
+            location + 1,
+            location - 1,
+            location + this.getColumns() - 1,
+            location + this.getColumns(),
+            location + this.getColumns() + 1,
+            location - this.getColumns() - 1,
+            location - this.getColumns(),
+            location - this.getColumns() + 1
+        ]
+    }
+
+    isCellAlive(cell) {
+        if (cell === undefined) {
+            // This isn't a cell, it can't be alive.
+            return false;
+        }
+
+        if (cell.isDead === true) {
+            return false;
+        }
+
+        return true;
+    }
+
+    createGrid(generation) {
+        generation.cells = [];
+
+        for (let row = 1; row < this.getRows(); row++) {
+            for (let column = 1; column < this.getColumns(); column++) {
+                let location = row * this.getColumns() + column + row;
+                let square = this.createSquare();
+                square.x = (column - 1) * this.#cellSize;
+                square.y = (row - 1) * this.#cellSize;
+                square.location = location;
+                square.on('pointerdown', () => this.toggle(location));
+
+                generation.cells[location] = square;
+                generation.addChild(square);
+            }
+        }
+    }
+
+    createSquare() {
+        let square = new PIXI.Sprite(this.#deadTexture);
+
+        square.height = this.#cellSize;
+        square.width = this.#cellSize;
+        square.buttonMode = true;
+        square.interactive = true;
+        square.buttonMode = true;
+        square.isDead = true;
+
+        return square;
+    }
+
+    toggle(location) {
+        let cell = this.#generations[this.#currentGeneration].cells[location];
+
+        if (cell.isDead === true) {
+            this.makeAlive(cell);
+            return;
+        }
+
+        this.makeDead(cell);
+    }
+
+    makeDead(cell) {
+        cell.texture = this.#deadTexture;
+        cell.isDead = true;
+    }
+
+    makeAlive(cell) {
+        cell.texture = this.#aliveTexture;
+        cell.isDead = false;
+    }
+
+    getGameWidth() {
+        return this.#app.renderer.width;
+    }
+
+    getGameHeight() {
+        return this.#app.renderer.height;
+    }
+
+    getColumns() {
+        return Math.floor(this.getGameWidth() / this.#cellSize);
+    }
+
+    getRows() {
+        return Math.floor(this.getGameHeight() / this.#cellSize);
     }
 }
