@@ -22,6 +22,7 @@
   "dependencies": {
     "@babel/polyfill": "^7.0.0",
     "envy": "^1.1.0",
+    "jquery": "^3.3.1",
     "matter-js": "^0.14.2",
     "pixi-tween": "^0.2.0",
     "pixi.js": "^4.8.2"
