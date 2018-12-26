@@ -40,7 +40,7 @@ export default class GameOfLife {
         this.#deadTexture = PIXI.utils.TextureCache["images/dead.png"];
         this.#aliveTexture = PIXI.utils.TextureCache["images/alive.png"];
 
-        this.createGrid(this.#generations[0]);
+        this.createGrid(this.#generations[this.#currentGeneration]);
         this.setup_jquery();
     }
 
@@ -76,46 +76,66 @@ export default class GameOfLife {
     }
 
     cellLivesToNextGen(cell) {
-        if (this.cellHasLessThanTwoNeighbors(cell)) {
-            return false;
+        let neighborCount = this.getNeighborCount(cell);
+
+        if (cell.isDead === true) {
+            if (neighborCount === 3) {
+                // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
+                console.log(cell.location + ' dead cell lives. It has 3 neighbors.');
+                return true;
+            }
         }
 
-        return true;
-    }
+        if (cell.isDead === false) {
+            if (neighborCount < 2) {
+                // Any live cell with fewer than two live neighbors dies, as if by underpopulation.
+                console.log(cell.location + ' alive cell dies. It has less than 2 neighbors.');
+                return false;
+            }
 
-    cellHasLessThanTwoNeighbors(cell) {
-        let currentGenerationCells = this.#generations[this.#currentGeneration].cells;
-        let neighbors = 0;
+            if (neighborCount > 3) {
+                // Any live cell with more than three live neighbors dies, as if by overpopulation.
+                console.log(cell.location + ' alive cell dies.  It has more than three neighbors.');
+                return false;
+            }
 
-        if (this.isCellAlive(currentGenerationCells[cell.location + 1]) === true) {
-            neighbors += 1;
-        }
-
-        if (this.isCellAlive(currentGenerationCells[cell.location + 1]) === true) {
-            neighbors += 1;
-        }
-
-        if (this.isCellAlive(currentGenerationCells[cell.location - 1]) === true) {
-            neighbors += 1;
-        }
-
-        if (neighbors < 2) {
-            return true;
+            if (neighborCount === 2 || neighborCount === 3) {
+                // Any live cell with two or three live neighbors lives on to the next generation.
+                console.log(cell.location + ' alive cell lives.  It has 2 or 3 neighbors.');
+                return true;
+            }
         }
 
         return false;
+    }
+
+    getNeighborCount(cell) {
+        let currentGenerationCells = this.#generations[this.#currentGeneration].cells;
+        let neighbors = 0;
+        console.log(cell.location);
+        console.log(this.getNeighborLocations(cell.location));
+        for (let location of this.getNeighborLocations(cell.location)) {
+            if (this.isCellAlive(currentGenerationCells[location]) === true) {
+                console.log(location + ' is alive.');
+                neighbors += 1;
+            }
+        }
+
+        return neighbors;
     }
 
     getNeighborLocations(location) {
         return [
             location + 1,
             location - 1,
-            location + this.getColumns() - 1,
+            // location + this.getColumns() - 1,
             location + this.getColumns(),
             location + this.getColumns() + 1,
+            location + this.getColumns() + 2,
+            location - this.getColumns() - 2,
             location - this.getColumns() - 1,
             location - this.getColumns(),
-            location - this.getColumns() + 1
+            // location - this.getColumns() + 1
         ]
     }
 
@@ -125,22 +145,25 @@ export default class GameOfLife {
             return false;
         }
 
-        if (cell.isDead === true) {
-            return false;
+        if (cell.isDead === false) {
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     createGrid(generation) {
         generation.cells = [];
 
-        for (let row = 1; row < this.getRows(); row++) {
-            for (let column = 1; column < this.getColumns(); column++) {
+        console.log('Columns: ' + this.getColumns());
+        console.log('Rows: ' + this.getRows());
+
+        for (let row = 0; row < this.getRows(); row++) {
+            for (let column = 0; column < this.getColumns(); column++) {
                 let location = row * this.getColumns() + column + row;
                 let square = this.createSquare();
-                square.x = (column - 1) * this.#cellSize;
-                square.y = (row - 1) * this.#cellSize;
+                square.x = (column) * this.#cellSize;
+                square.y = (row) * this.#cellSize;
                 square.location = location;
                 square.on('pointerdown', () => this.toggle(location));
 
