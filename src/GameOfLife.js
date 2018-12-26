@@ -9,6 +9,7 @@ export default class GameOfLife {
     #cellSize = 32;
     #generations = [];
     #currentGeneration = 0;
+    #autoPlay = false;
 
     constructor() {
         this.#app = new PIXI.Application(
@@ -42,10 +43,27 @@ export default class GameOfLife {
 
         this.createGrid(this.#generations[this.#currentGeneration]);
         this.setup_jquery();
+        window.setInterval(() => this.run(), 500);
+    }
+
+    run() {
+        if (this.#autoPlay === true) {
+            this.nextGeneration();
+        }
     }
 
     setup_jquery() {
-        jQuery('#next-generation').on('click', () => this.nextGeneration())
+        jQuery('#next-generation').on('click', () => this.nextGeneration());
+        jQuery('#play').on('click', () => this.enableAutorun());
+        jQuery('#stop').on('click', () => this.disableAutorun());
+    }
+
+    enableAutorun() {
+        this.#autoPlay = true;
+    }
+
+    disableAutorun() {
+        this.#autoPlay = false;
     }
 
     nextGeneration() {
